@@ -95,7 +95,7 @@ func runOnchange(c *cobra.Command, args []string) error {
 		mu:          &sync.Mutex{},
 	}
 
-	exArr := []string{".git"}
+	exArr := []string{".git", "node_modules"}
 	if ex != "" {
 		arr := strings.Split(ex, ",")
 		for _, e := range arr {
@@ -163,7 +163,10 @@ func (r *runner) Run() error {
 		return err
 	}
 
-	var cmd *exec.Cmd
+	var cmd *exec.Cmd = r.newCmd()
+	if err := cmd.Start(); err != nil {
+		return err
+	}
 	var done = make(chan error)
 
 	for {
