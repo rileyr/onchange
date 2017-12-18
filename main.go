@@ -20,6 +20,10 @@ func main() {
 	RootCmd.Execute()
 }
 
+var defaultExcludes []string = []string{
+	".git", "node_modules/", ".swo", ".swp",
+}
+
 var log *logrus.Logger
 
 var RootCmd = &cobra.Command{
@@ -32,7 +36,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringP("watch-dir", "d", "", "directory to watch")
+	RootCmd.PersistentFlags().StringP("watch-dir", "d", ".", "directory to watch")
 	RootCmd.PersistentFlags().StringP("command", "c", "", "command to run")
 	RootCmd.PersistentFlags().StringP("exclude", "e", "", "exclude pattern")
 	RootCmd.PersistentFlags().StringP("interval", "i", "1000ms", "check interval (ms/ns)")
@@ -51,10 +55,6 @@ func setLogger(c *cobra.Command, args []string) {
 }
 
 func validateArgs(c *cobra.Command, args []string) error {
-	if d, _ := c.Flags().GetString("watch-dir"); d == "" {
-		return errors.New("watch-dir is required!")
-	}
-
 	if c, _ := c.Flags().GetString("command"); c == "" {
 		return errors.New("command is required!")
 	}
@@ -95,7 +95,7 @@ func runOnchange(c *cobra.Command, args []string) error {
 		mu:          &sync.Mutex{},
 	}
 
-	exArr := []string{".git", "node_modules"}
+	exArr := defaultExcludes
 	if ex != "" {
 		arr := strings.Split(ex, ",")
 		for _, e := range arr {
@@ -164,9 +164,6 @@ func (r *runner) Run() error {
 	}
 
 	var cmd *exec.Cmd = r.newCmd()
-	if err := cmd.Start(); err != nil {
-		return err
-	}
 	var done = make(chan error)
 
 	for {
@@ -181,8 +178,8 @@ func (r *runner) Run() error {
 				log.Infof("running command: %s", r.cmdStr)
 				r.resetNext = false
 
-				if cmd != nil {
-					log.Debugf("killing current process")
+				if cmd != nil && cmd.Process != nil {
+					log.Debug("killing current process")
 					err := cmd.Process.Kill()
 					if err != nil && err.Error() != "os: process already finished" {
 						return err
