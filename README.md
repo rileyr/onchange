@@ -1,5 +1,12 @@
 # onchange
 
+----
+
+dont use this. seriously, dont use this. use `entr` for anything that matters. 
+
+
+-----
+
 quick and dirty command runner
 
 ```shell
